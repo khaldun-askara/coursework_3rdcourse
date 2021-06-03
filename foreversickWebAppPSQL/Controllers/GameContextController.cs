@@ -21,12 +21,7 @@ namespace foreversickWebAppPSQL.Controllers
         {
             this.configuration = configuration;
         }
-        //string Host => configuration["ConnectionStrings:Host"];
-        //int Port => int.Parse(configuration["ConnectionStrings:Port"]);
-        //string Database => configuration["ConnectionStrings:Host"];
-        //string Usermane => configuration["ConnectionStrings:Username"];
-        //string Password => configuration["ConnectionStrings:Password"];
-
+        
         //private readonly string sConnStr = new NpgsqlConnectionStringBuilder
         //{
         //    Host = "localhost",
@@ -285,8 +280,6 @@ namespace foreversickWebAppPSQL.Controllers
         // возвращает список ВСЕХ диагнозов, в названии которых есть подстрока substring
         public string DiagnosesBySubstring(string substring)
         {
-            substring = Regex.Replace(substring.ToLower(), @"^[a-zа-яё]", m => m.Value.ToUpper());
-
             DiagnosisList diagnosisList = new DiagnosisList();
             using (var sConn = new NpgsqlConnection(sConnStr))
             {
@@ -298,15 +291,11 @@ namespace foreversickWebAppPSQL.Controllers
                                            mkb_name,
                                            mkb_code
                                     FROM diagnoses
-                                    WHERE mkb_code IS NOT NULL AND 
-                                    (mkb_name LIKE '%' || @upper_substring || '%' OR mkb_name LIKE '%' || @lower_substring || '%')"
+                                    WHERE mkb_code IS NOT NULL AND
+                                    (mkb_name ILIKE '%' || @substring || '%')"
                 };
-                //Command.Parameters.Add("@upper_substring", (NpgsqlTypes.NpgsqlDbType)System.Data.DbType.AnsiString).Value = substring;
-                //Command.Parameters.Add("@lower_substring", (NpgsqlTypes.NpgsqlDbType)System.Data.DbType.AnsiString).Value = substring.ToLower();
-                NpgsqlParameter upper_substring = new NpgsqlParameter("@upper_substring", substring);
-                NpgsqlParameter lower_substring = new NpgsqlParameter("@lower_substring", substring.ToLower());
-                Command.Parameters.Add(upper_substring);
-                Command.Parameters.Add(lower_substring);
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
                 using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
                     while (sqlReader.Read())
                     {
