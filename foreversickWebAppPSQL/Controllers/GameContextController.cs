@@ -345,7 +345,6 @@ namespace foreversickWebAppPSQL.Controllers
         [HttpGet("[action]")]
         //GET: GameContext/DiagnosesСategory
         // возвращает список категорий для диагноза
-        // НЕ РАБОТАЕТ
         public string DiagnosesСategory()
         {
             DiagnosisList diagnosisList = new DiagnosisList();
@@ -748,28 +747,6 @@ namespace foreversickWebAppPSQL.Controllers
                 sConn.Close();
             }
             return res;
-        }
-
-        [HttpGet("[action]")]
-        // GET: GameContext/HMMM
-        // ПРОСТО ТЫКАЮСЬ
-        public string HMMM()
-        {
-            string answer = "no answer:(";
-            using (var sConn = new NpgsqlConnection(sConnStr2))
-            {
-                sConn.Open();
-                var sCommand = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT *
-                                FROM roles",
-                };
-                using (var sqlReader = sCommand.ExecuteReader())
-                    if (sqlReader.Read())
-                        answer = sqlReader.GetString(1);
-            }
-            return answer;
         }
     }
 
