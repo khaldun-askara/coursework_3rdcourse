@@ -366,13 +366,13 @@ namespace foreversickWebAppPSQL.Controllers
                 NpgsqlCommand Command = new NpgsqlCommand
                 {
                     Connection = sConn,
-                    CommandText = @"SELECT id as parentid,
-                                           rec_code as parent_rec_code,
+                    CommandText = @"SELECT id,
+                                           rec_code,
                                            mkb_code,
                                            mkb_name,
                                            id_parent
-                                    FROM diagnoses WHERE
-                                        (SELECT COUNT(*) FROM diagnoses WHERE rec_code LIKE RTRIM(parent_rec_code)||'%' AND
+                                    FROM diagnoses as parents WHERE
+                                        (SELECT COUNT(*) FROM diagnoses WHERE rec_code LIKE RTRIM(parents.rec_code)||'%' AND
                                          (ID IN (SELECT diagnosis_id FROM answers_questions_for_diagnoses) OR
                                           ID IN (SELECT diagnosis_id FROM enumerated_indicators_of_diagnoses) OR
                                           ID IN (SELECT diagnosis_id FROM numerical_indicators_of_diagnoses))) > 0
