@@ -90,8 +90,8 @@
                         ответа и он не несёт полезной информации для игрока, которому нужно угадать диагноз).
                         <br /><b>Хороший пример вопроса:</b>
                         <ui>
-                            <li>&quot;В: У вас болит живот? Где конкретно?&quot;</li>
-                            <li>&quot;О: Да, болит. Ощущаю спазм где-то внизу живота&quot;.</li>
+                            <li>В: &quot;У вас болит живот? Где конкретно?&quot;</li>
+                            <li>О: &quot;Да, болит. Ощущаю спазм где-то внизу живота&quot;.</li>
                         </ui>
                     </div>
                 </details>
@@ -116,15 +116,33 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        Отправить предложенную вами информацию о диагнозе? Пожалуйста, удостоверьтесь, что введённые
-                        вами данные не содержат ошибок и неточностей. Обратите внимание на примеры описаний.
-
-                        Заранее большое спасибо вам за ваш вклад!
+                        Отправить предложенную вами информацию о диагнозе? <br />Пожалуйста, удостоверьтесь, что
+                        введённые вами данные не содержат ошибок и неточностей. Обратите внимание на примеры описаний.
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                        <button id="submit-button" type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <button id="submit-button" type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                            data-bs-toggle="modal" data-bs-target="#success-modal">
                             Да, отправить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="success-modal" class="modal fade" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="successModalLabel">Успешно отправлено!</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Спасибо за ваш вклад!
+                    </div>
+                    <div class="modal-footer">
+                        <button id="success-button" type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Пожалуйста!
                         </button>
                     </div>
                 </div>
@@ -225,8 +243,13 @@
                         body: JSON.stringify(body)
                     })
                 }
-
-                window.location.reload()
+            })
+            const successButton = document.getElementById('success-button')
+            successButton.addEventListener('click', () => {
+                document.body.scrollTop = document.documentElement.scrollTop = 0
+                setTimeout(function () {
+                    window.location.reload()
+                }, 800)
             })
 
             const sendButton = document.getElementById('send-button')

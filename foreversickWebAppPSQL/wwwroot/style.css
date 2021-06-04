@@ -38,11 +38,6 @@ details summary::-webkit-details-marker {
     list-style: none;
   }
 
-u{
-    text-decoration-line: underline;
-    text-decoration-color: rgb(148, 148, 148);
-}
-
 .help{
     opacity: 0.7;
     border: none;
