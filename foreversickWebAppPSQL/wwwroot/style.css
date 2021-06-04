@@ -1,0 +1,49 @@
+nav {
+    width: 100%;
+    background-color: rgb(13,110,253);
+}
+
+.piece{
+    background-color: rgb(255, 255, 255);
+    border-radius: 15px;
+}
+#diagnoses{
+    margin-left: 20% !important;
+}
+body{
+    background-color: rgb(231, 241, 255)
+}
+
+.gray-border{
+    border-color: rgb(175, 203, 243) !important;
+}
+
+.navbar-text {
+    color: rgb(255, 255, 255) !important;
+}
+
+@media screen and (max-width: 600px) {
+    .mx-5 {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
+/* Убираем стандартный маркер Chrome */
+details summary::-webkit-details-marker {
+    display: none
+  }
+  /* Убираем стандартный маркер Firefox */
+  details > summary {
+    list-style: none;
+  }
+
+u{
+    text-decoration-line: underline;
+    text-decoration-color: rgb(148, 148, 148);
+}
+
+.help{
+    opacity: 0.7;
+    border: none;
+}
