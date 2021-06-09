@@ -344,6 +344,33 @@ namespace foreversickWebAppPSQL.Controllers
             return res;
         }
 
+        [HttpGet("[action]/{diagnosis_id}")]
+        public string Suggestions(int diagnosis_id)
+        {
+            UserSuggestionList userSuggestionList = new UserSuggestionList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT diagnosis_id, symptoms, visible_signs, questions_and_answers, id
+                                    FROM user_suggestions WHERE diagnosis_id = @diagnosis_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                Command.Parameters.Add(diagnosisParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        UserSuggestion suggestion = new UserSuggestion(sqlReader.GetInt32(4), sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2), sqlReader.GetString(3));
+                        userSuggestionList.Add(suggestion);
+                    }
+            }
+            string res = JsonSerializer.Serialize<UserSuggestionList>(userSuggestionList);
+            return res;
+
+        }
+
         [HttpGet("[action]/{сategory_id}")]
         //GET: GameContext/Diagnoses/сategory_id
         //возвращает список диагнозов из категории
