@@ -13,7 +13,7 @@
 *.suo
 *.user
 *.userosscache
-*.sln.docstates
+#*.sln.docstates
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -392,7 +392,7 @@ ExportedObj/
 .consulo/
 *.csproj
 *.unityproj
-*.sln
+#*.sln
 *.booproj
 *.svd
 *.mdb

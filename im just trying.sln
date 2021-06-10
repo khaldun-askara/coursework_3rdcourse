@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31321.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{82B9406A-4CFC-1C56-0E0A-948A6F2D4352}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.2D.Animation.Samples.Runtime", "Unity.2D.Animation.Samples.Runtime.csproj", "{825CFC2A-43D3-3E95-B789-5CEC095A75C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.2D.Animation.Samples.Dependency", "Unity.2D.Animation.Samples.Dependency.csproj", "{FF1F0808-3874-3DEB-4144-404DD60553FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{1D337A4F-4D5C-7DF5-5CC0-428907F0C965}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.2D.Animation.Samples.Editor", "Unity.2D.Animation.Samples.Editor.csproj", "{550F604D-CF4C-EFE8-D525-9B19B5F3E2BE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "foreversickWebAppPSQL", "foreversickWebAppPSQL\foreversickWebAppPSQL.csproj", "{EDFFBE9C-0CE8-48A7-94EC-A468D72D12F9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{82B9406A-4CFC-1C56-0E0A-948A6F2D4352}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82B9406A-4CFC-1C56-0E0A-948A6F2D4352}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82B9406A-4CFC-1C56-0E0A-948A6F2D4352}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82B9406A-4CFC-1C56-0E0A-948A6F2D4352}.Release|Any CPU.Build.0 = Release|Any CPU
+		{825CFC2A-43D3-3E95-B789-5CEC095A75C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{825CFC2A-43D3-3E95-B789-5CEC095A75C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{825CFC2A-43D3-3E95-B789-5CEC095A75C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{825CFC2A-43D3-3E95-B789-5CEC095A75C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF1F0808-3874-3DEB-4144-404DD60553FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF1F0808-3874-3DEB-4144-404DD60553FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF1F0808-3874-3DEB-4144-404DD60553FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF1F0808-3874-3DEB-4144-404DD60553FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D337A4F-4D5C-7DF5-5CC0-428907F0C965}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D337A4F-4D5C-7DF5-5CC0-428907F0C965}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D337A4F-4D5C-7DF5-5CC0-428907F0C965}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D337A4F-4D5C-7DF5-5CC0-428907F0C965}.Release|Any CPU.Build.0 = Release|Any CPU
+		{550F604D-CF4C-EFE8-D525-9B19B5F3E2BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{550F604D-CF4C-EFE8-D525-9B19B5F3E2BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{550F604D-CF4C-EFE8-D525-9B19B5F3E2BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{550F604D-CF4C-EFE8-D525-9B19B5F3E2BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDFFBE9C-0CE8-48A7-94EC-A468D72D12F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDFFBE9C-0CE8-48A7-94EC-A468D72D12F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDFFBE9C-0CE8-48A7-94EC-A468D72D12F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDFFBE9C-0CE8-48A7-94EC-A468D72D12F9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {38F4C043-96A0-4E72-9D44-B157811B9110}
+	EndGlobalSection
+EndGlobal
