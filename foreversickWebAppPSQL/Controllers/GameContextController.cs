@@ -21,7 +21,7 @@ namespace foreversickWebAppPSQL.Controllers
         {
             this.configuration = configuration;
         }
-        
+
         //private readonly string sConnStr = new NpgsqlConnectionStringBuilder
         //{
         //    Host = "localhost",
@@ -312,7 +312,79 @@ namespace foreversickWebAppPSQL.Controllers
             return res;
         }
 
+        [HttpGet("[action]/{substring}")]
+        //GET: GameContext/QuestionsBySubstring
+        // возвращает список ВСЕХ вопросов, в тексте которых есть подстрока substring
+        public string QuestionsBySubstring(string substring)
+        {
+            QuestionList questionList = new QuestionList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id,
+                                           name
+                                    FROM player_questions
+                                    WHERE name ILIKE '%' || @substring || '%'"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
+                        questionList.Add(question);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<QuestionList>(questionList, options);
+            return res;
+        }
+
+        [HttpGet("[action]/{substring}")]
+        //GET: GameContext/AnswersBySubstring
+        // возвращает список ВСЕХ ответов, в тексте которых есть подстрока substring
+        public string AnswersBySubstring(string substring)
+        {
+            AnswerList answerList = new AnswerList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id,
+                                           name
+                                    FROM patient_answers
+                                    WHERE name ILIKE '%' || @substring || '%'"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Answer answer = new Answer(sqlReader.GetInt32(0), sqlReader.GetString(1));
+                        answerList.Add(answer);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<AnswerList>(answerList, options);
+            return res;
+        }
+
         [HttpGet("[action]/suggestions")]
+        //GET: GameContext/Diagnoses/suggestions
+        // возвращает список ВСЕХ диагнозов, для которых есть предложения пользователей
         public string Diagnoses()
         {
             DiagnosisList diagnosisList = new DiagnosisList();
@@ -345,6 +417,8 @@ namespace foreversickWebAppPSQL.Controllers
         }
 
         [HttpGet("[action]/{diagnosis_id}")]
+        //GET: GameContext/Suggestions/diagnosis_id
+        // возвращает список предложений для конкретного диагноза
         public string Suggestions(int diagnosis_id)
         {
             UserSuggestionList userSuggestionList = new UserSuggestionList();
@@ -705,6 +779,7 @@ namespace foreversickWebAppPSQL.Controllers
             }
             return res;
         }
+
         //[HttpPost("[action]")]
         //// POST: GameContext/Question
         //// добавляет вариант вопроса
