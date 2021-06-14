@@ -780,48 +780,52 @@ namespace foreversickWebAppPSQL.Controllers
             return res;
         }
 
-        //[HttpPost("[action]")]
-        //// POST: GameContext/Question
-        //// добавляет вариант вопроса
-        //public int Question(Question question)
-        //{
-        //    int res = -1;
-        //    using (var sConn = new NpgsqlConnection(sConnStr))
-        //    {
-        //        sConn.Open();
-        //        NpgsqlCommand Command = new NpgsqlCommand
-        //        {
-        //            Connection = sConn,
-        //            CommandText = @"INSERT INTO player_questions (name)
-        //                            VALUES (@question)"
-        //        };
-        //        Command.Parameters.Add("@question", System.Data.DbType.AnsiString).Value = question.question_text;
-        //        res = Command.ExecuteNonQuery();
-        //        sConn.Close();
-        //    }
-        //    return res;
-        //}
-        //[HttpPost("[action]")]
-        //// POST: GameContext/Answer
-        //// добавляет вариант ответа
-        //public int Answer(Answer answer)
-        //{
-        //    int res = -1;
-        //    using (var sConn = new NpgsqlConnection(sConnStr))
-        //    {
-        //        sConn.Open();
-        //        NpgsqlCommand Command = new NpgsqlCommand
-        //        {
-        //            Connection = sConn,
-        //            CommandText = @"INSERT INTO patient_answers (name)
-        //                            VALUES (@answer)"
-        //        };
-        //        Command.Parameters.Add("@answer", System.Data.DbType.AnsiString).Value = answer.answer_text;
-        //        res = Command.ExecuteNonQuery();
-        //        sConn.Close();
-        //    }
-        //    return res;
-        //}
+        [HttpPost("[action]")]
+        // POST: GameContext/Question
+        // добавляет вариант вопроса
+        public int Question(Question question)
+        {
+            int res = -1;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO player_questions (name)
+                                    VALUES (@question)
+                                    RETURNING id"
+                };
+                NpgsqlParameter question_name = new NpgsqlParameter("@question", question.question_text);
+                Command.Parameters.Add(question_name);
+                int.TryParse(Command.ExecuteScalar().ToString(), out res);
+                sConn.Close();
+            }
+            return res;
+        }
+        [HttpPost("[action]")]
+        // POST: GameContext/Answer
+        // добавляет вариант ответа
+        public int Answer(Answer answer)
+        {
+            int res = -1;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO patient_answers (name)
+                                    VALUES (@answer)
+                                    RETURNING id"
+                };
+                NpgsqlParameter answer_name = new NpgsqlParameter("@answer", answer.answer_text);
+                Command.Parameters.Add(answer_name);
+                int.TryParse(Command.ExecuteScalar().ToString(), out res);
+                sConn.Close();
+            }
+            return res;
+        }
         [HttpPost("[action]")]
         // POST: GameContext/Suggestion
         public ActionResult Suggestion(Body body)
