@@ -935,6 +935,56 @@ namespace foreversickWebAppPSQL.Controllers
                 sConn.Close();
             }
         }
+
+        [HttpDelete("[action]/{diagnosis_id}-{question_id}")]
+        // DELETE:GameContext/AnswerOnQuestionDelete
+        // удаляет ответ на вопрос для диагноза
+        public void AnswerOnQuestionDelete(int diagnosis_id, int question_id)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"DELETE FROM answers_questions_for_diagnoses WHERE diagnosis_id = @diagnosis_id AND question_id = @question_id"
+                };
+                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", question_id);
+                Command.Parameters.Add(diagnosis_idParam);
+                Command.Parameters.Add(question_idParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
+
+        [HttpPut("[action]/{diagnosis_id}-{question_id}-{new_question_id}-{new_answer_id}")]
+        // PUT: GameContext/AnswerOnQuestionUpdate
+        // изменяет ответ на вопрос для диагноза
+        public void AnswerOnQuestionUpdate(int diagnosis_id, int question_id, int new_question_id, int new_answer_id)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"UPDATE answers_questions_for_diagnoses
+                                    SET question_id = @new_question_id, answer_id = @new_answer_id
+                                    WHERE diagnosis_id = @diagnosis_id AND question_id =@question_id"
+                };
+                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", question_id);
+                NpgsqlParameter new_question_idParam = new NpgsqlParameter("@new_question_id", new_question_id);
+                NpgsqlParameter new_answer_idParam = new NpgsqlParameter("@new_answer_id", new_answer_id);
+                Command.Parameters.Add(diagnosis_idParam);
+                Command.Parameters.Add(question_idParam);
+                Command.Parameters.Add(new_question_idParam);
+                Command.Parameters.Add(new_answer_idParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
     }
 
     public class Body
