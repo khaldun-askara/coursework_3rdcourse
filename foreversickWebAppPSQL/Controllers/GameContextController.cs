@@ -915,6 +915,26 @@ namespace foreversickWebAppPSQL.Controllers
             }
             return res;
         }
+
+        [HttpDelete("[action]/{user_suggestion_id}")]
+        // DELETE: GameContext/Suggestion/
+        // удаляет предложение пользователя по идентификатору
+        public void Suggestion(int user_suggestion_id)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"DELETE FROM user_suggestions WHERE id = @user_suggestion_id"
+                };
+                NpgsqlParameter user_suggestion_idParam = new NpgsqlParameter("@user_suggestion_id", user_suggestion_id);
+                Command.Parameters.Add(user_suggestion_idParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
     }
 
     public class Body
