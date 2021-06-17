@@ -43,7 +43,7 @@ namespace foreversickWebAppPSQL.Controllers
         //    AutoPrepareMinUsages = 2,
         //    MaxAutoPrepare = 10
         //}.ConnectionString;
-        string sConnStr => configuration["ConnectionStrings:REMOTEDB"];
+        string sConnStr => configuration["ConnectionStrings:DB"];
         string sConnStr2 => configuration["ConnectionStrings:REMOTEDB"];
 
         [HttpGet("[action]")]
@@ -631,6 +631,35 @@ namespace foreversickWebAppPSQL.Controllers
             if (string.IsNullOrEmpty(answer))
                 return BadRequest();
             return Ok(answer);
+        }
+
+        [HttpGet("[action]/{diagnosis_id}-{question_id}")]
+        // GET: GameContext/DiagnosisQuestionValidation/diagnosis_id-question_id
+        // возвращает 1, если на вопрос есть ответ для этого диагноза (то есть есть пара диагноз-вопрос в таблице)
+        // иначе, очевидно, 0
+        public int DiagnosisQuestionValidation(int diagnosis_id, int question_id)
+        {
+            int count = 0;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT count(*)
+                                    FROM answers_questions_for_diagnoses
+                                    WHERE diagnosis_id = @diagnosis_id
+                                    AND question_id = @question_id;"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter questionParam = new NpgsqlParameter("@question_id", question_id);
+                Command.Parameters.Add(diagnosisParam);
+                Command.Parameters.Add(questionParam);
+
+                int.TryParse(Command.ExecuteScalar().ToString(), out count);
+                sConn.Close();
+            }
+            return count;
         }
 
         [HttpGet("[action]/{diagnosis_id}-{indicator_id}")]
