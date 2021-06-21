@@ -1027,6 +1027,34 @@ namespace foreversickWebAppPSQL.Controllers
             return res;
         }
 
+        [HttpGet("[action]/{diagnosis_id}-{indicator_id}")]
+        // GET: GameContext/DiagnosisQuestionValidation/diagnosis_id-indicator_id
+        // возвращает 1, если для диагноза указан этот диагноз(то есть есть пара диагноз-индикатор в таблице), иначе 0
+        public int DiagnosisNumericalIndicatorValidation(int diagnosis_id, int indicator_id)
+        {
+            int count = 0;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT count(*)
+                                    FROM numerical_indicators_of_diagnoses
+                                    WHERE diagnosis_id = @diagnosis_id
+                                    AND indicator_id = @indicator_id;"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter indicator_idParam = new NpgsqlParameter("@indicator_id", indicator_id);
+                Command.Parameters.Add(diagnosisParam);
+                Command.Parameters.Add(indicator_idParam);
+
+                int.TryParse(Command.ExecuteScalar().ToString(), out count);
+                sConn.Close();
+            }
+            return count;
+        }
+
         [HttpPost("[action]")]
         // POST: GameContext/PostGameResult/player_id-right_diagnosis_id-given_diagnosis_id
         // записывает результат игры в бд
