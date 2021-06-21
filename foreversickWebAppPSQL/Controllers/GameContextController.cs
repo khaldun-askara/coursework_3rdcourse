@@ -313,6 +313,56 @@ namespace foreversickWebAppPSQL.Controllers
         }
 
         [HttpGet("[action]/{substring}")]
+        //GET: GameContext/NumericalIndicatorsBySubstring
+        // возвращает список ВСЕХ числовых индикаторов, в названии которых есть подстрока substring
+        public string NumericalIndicatorsBySubstring(string substring)
+        {
+            NumericalIndicatorList indicatorsList = new NumericalIndicatorList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT indicator_id,
+                                           name,
+                                           min_value,
+                                           max_value,
+                                           normal_min,
+                                           normal_max,
+                                           units_name,
+                                           accuracy
+                                    FROM numerical_indicators_ranges
+                                    JOIN patient_indicators ON numerical_indicators_ranges.indicator_id = patient_indicators.id
+                                    WHERE name ILIKE '%' || @substring || '%'"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        NumericalIndicator indicator = new NumericalIndicator(sqlReader.GetInt32(0), 
+                                                                              sqlReader.GetString(1),
+                                                                              sqlReader.GetDouble(2),
+                                                                              sqlReader.GetDouble(3),
+                                                                              sqlReader.GetDouble(4),
+                                                                              sqlReader.GetDouble(5),
+                                                                              sqlReader.GetString(6),
+                                                                              sqlReader.GetInt32(7));
+                        indicatorsList.Add(indicator);
+                    }
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<NumericalIndicatorList>(indicatorsList, options);
+            return res;
+        }
+
+        [HttpGet("[action]/{substring}")]
         //GET: GameContext/QuestionsBySubstring
         // возвращает список ВСЕХ вопросов, в тексте которых есть подстрока substring
         public string QuestionsBySubstring(string substring)
@@ -780,6 +830,201 @@ namespace foreversickWebAppPSQL.Controllers
                     }
             }
             return GetRandomParam(min, max, accuracy) + " " + units_name;
+        }
+
+        [HttpGet("[action]/{diagnosis_id}")]
+        //GET:GameContext/NumericalIndicators/diagnosis_id
+        // возвращает список числовых индикаторов для конкретного диагноза
+        public string NumericalIndicators(int diagnosis_id)
+        {
+            NumericalIndicatorInDiagnosisList indicatorsList = new NumericalIndicatorInDiagnosisList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT diagnosis_id,
+                                           numerical_indicators_of_diagnoses.indicator_id,
+                                           name,
+                                           min_value,
+                                           max_value,
+                                           normal_min,
+                                           normal_max,
+                                           units_name,
+                                           accuracy,
+                                           value_min,
+                                           value_max
+                                    FROM numerical_indicators_of_diagnoses
+                                    JOIN patient_indicators ON numerical_indicators_of_diagnoses.indicator_id = patient_indicators.id
+                                    JOIN numerical_indicators_ranges ON patient_indicators.id = numerical_indicators_ranges.indicator_id
+                                    WHERE diagnosis_id = @diagnosis_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                Command.Parameters.Add(diagnosisParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        NumericalIndicator indicator = new NumericalIndicator(sqlReader.GetInt32(1),
+                                                                              sqlReader.GetString(2),
+                                                                              sqlReader.GetDouble(3),
+                                                                              sqlReader.GetDouble(4),
+                                                                              sqlReader.GetDouble(5),
+                                                                              sqlReader.GetDouble(6),
+                                                                              sqlReader.GetString(7),
+                                                                              sqlReader.GetInt32(8));
+                        NumericalIndicatorInDiagnosis indicatorInDiagnosis = new NumericalIndicatorInDiagnosis(sqlReader.GetInt32(0), 
+                                                                                                               indicator,
+                                                                                                               sqlReader.GetDouble(9),
+                                                                                                               sqlReader.GetDouble(10));
+                        indicatorsList.Add(indicatorInDiagnosis);
+                    }
+            }
+            string res = JsonSerializer.Serialize<NumericalIndicatorInDiagnosisList>(indicatorsList);
+            return res;
+        }
+
+        [HttpPost("[action]")]
+        // POST: GameContext/NumericalIndicators/
+        // добавляет индикатор к диагнозу, указывая минимальное и максимальное значение этого индикатора при этом диагнозе
+        public int NumericalIndicators(num_indicator_in_diagnosis request)
+        {
+            int res = -1;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO numerical_indicators_of_diagnoses (diagnosis_id, 
+                                                                                   indicator_id,
+                                                                                   value_min, 
+                                                                                   value_max)
+                                    VALUES (@diagnosis_id, @indicator_id, @value_min, @value_max)"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", request.diagnosis_id);
+                NpgsqlParameter indicator_idParam = new NpgsqlParameter("@indicator_id", request.indicator_id);
+                NpgsqlParameter value_minParam = new NpgsqlParameter("@value_min", request.value_min);
+                NpgsqlParameter value_maxParam = new NpgsqlParameter("@value_max", request.value_max);
+                Command.Parameters.Add(diagnosisParam);
+                Command.Parameters.Add(indicator_idParam);
+                Command.Parameters.Add(value_minParam);
+                Command.Parameters.Add(value_maxParam);
+                res = Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+            return res;
+        }
+
+        [HttpPut("[action]/{old_indicator_id}")]
+        // PUT: GameContext/NumericalIndicatorsUpdate
+        // изменяет числовой индикатор диагноза
+        public void NumericalIndicatorsUpdate(int old_indicator_id, num_indicator_in_diagnosis request)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"UPDATE numerical_indicators_of_diagnoses
+                                    SET indicator_id = @indicator_id, value_min = @value_min, value_max = @value_max
+                                    WHERE diagnosis_id = @diagnosis_id AND indicator_id = @old_indicator_id"
+                };
+                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", request.diagnosis_id);
+                NpgsqlParameter old_indicator_idParam = new NpgsqlParameter("@old_indicator_id", old_indicator_id);
+                NpgsqlParameter indicator_idParam = new NpgsqlParameter("@indicator_id", request.indicator_id);
+                NpgsqlParameter value_minParam = new NpgsqlParameter("@value_min", request.value_min);
+                NpgsqlParameter value_maxParam = new NpgsqlParameter("@value_max", request.value_max);
+                Command.Parameters.Add(diagnosis_idParam);
+                Command.Parameters.Add(old_indicator_idParam);
+                Command.Parameters.Add(indicator_idParam);
+                Command.Parameters.Add(value_minParam);
+                Command.Parameters.Add(value_maxParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
+
+        [HttpDelete("[action]/{diagnosis_id}-{indicator_id}")]
+        // DELETE:GameContext/NumericalIndicatorsDelete
+        // удаляет числовой индикатор для диагноза
+        public void NumericalIndicatorsDelete(int diagnosis_id, int indicator_id)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"DELETE FROM numerical_indicators_of_diagnoses WHERE diagnosis_id = @diagnosis_id AND indicator_id = @indicator_id"
+                };
+                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter indicator_idParam = new NpgsqlParameter("@indicator_id", indicator_id);
+                Command.Parameters.Add(diagnosis_idParam);
+                Command.Parameters.Add(indicator_idParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
+
+        [HttpPost("[action]")]
+        // POST: GameContext/NumericalIndicator/
+        // добавляет индикатор к диагнозу, указывая минимальное и максимальное значение этого индикатора при этом диагнозе
+        public int NumericalIndicator(NumericalIndicator indicator)
+        {
+            int res = -1;
+            int indicator_id = 0;
+            // добавление индикатора в таблицу индикаторов
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO patient_indicators (name, type_is_enum)
+                                    VALUES (@indicator_name, FALSE)
+                                    RETURNING id;"
+                };
+                NpgsqlParameter nameParam = new NpgsqlParameter("@indicator_name", indicator.name);
+                Command.Parameters.Add(nameParam);
+                indicator_id = Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+            // добавление индикатора в таблицу значений
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO numerical_indicators_ranges (indicator_id, min_value, max_value, normal_min, normal_max, units_name, accuracy)
+                                    VALUES (@indicator_id, 
+                                            @min_value, 
+                                            @max_value, 
+                                            @normal_min, 
+                                            @normal_max, 
+                                            @units_name, 
+                                            @accuracy)"
+                };
+                NpgsqlParameter indicator_idParam = new NpgsqlParameter("@indicator_id", indicator_id);
+                NpgsqlParameter min_valueParam = new NpgsqlParameter("@min_value", indicator.min_value);
+                NpgsqlParameter max_valueParam = new NpgsqlParameter("@max_value", indicator.max_value);
+                NpgsqlParameter normal_minParam = new NpgsqlParameter("@normal_min", indicator.normal_min);
+                NpgsqlParameter normal_maxParam = new NpgsqlParameter("@normal_max", indicator.normal_max);
+                NpgsqlParameter units_nameParam = new NpgsqlParameter("@units_name", indicator.units_name);
+                NpgsqlParameter accuracyParam = new NpgsqlParameter("@accuracy", indicator.accuracy);
+                Command.Parameters.Add(indicator_idParam);
+                Command.Parameters.Add(min_valueParam);
+                Command.Parameters.Add(max_valueParam);
+                Command.Parameters.Add(normal_minParam);
+                Command.Parameters.Add(normal_maxParam);
+                Command.Parameters.Add(units_nameParam);
+                Command.Parameters.Add(accuracyParam);
+                res = Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+            return res;
         }
 
         [HttpPost("[action]")]
