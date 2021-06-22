@@ -970,7 +970,7 @@ namespace foreversickWebAppPSQL.Controllers
 
         [HttpPost("[action]")]
         // POST: GameContext/NumericalIndicator/
-        // добавляет индикатор к диагнозу, указывая минимальное и максимальное значение этого индикатора при этом диагнозе
+        // добавляет индикатор
         public int NumericalIndicator(NumericalIndicator indicator)
         {
             int res = -1;
@@ -988,7 +988,7 @@ namespace foreversickWebAppPSQL.Controllers
                 };
                 NpgsqlParameter nameParam = new NpgsqlParameter("@indicator_name", indicator.name);
                 Command.Parameters.Add(nameParam);
-                indicator_id = Command.ExecuteNonQuery();
+                int.TryParse(Command.ExecuteScalar().ToString(), out indicator_id);
                 sConn.Close();
             }
             // добавление индикатора в таблицу значений
