@@ -3,12 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Npgsql;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Text.Unicode;
-using System.Threading.Tasks;
 
 namespace foreversickWebAppPSQL.Controllers
 {
@@ -45,6 +42,8 @@ namespace foreversickWebAppPSQL.Controllers
         //}.ConnectionString;
         string sConnStr => configuration["ConnectionStrings:DB"];
         string sConnStr2 => configuration["ConnectionStrings:REMOTEDB"];
+
+        #region DIAGNOSIS TABLE
 
         [HttpGet("[action]")]
         // GET: GameContext/RandomDiagnosis
@@ -100,145 +99,6 @@ namespace foreversickWebAppPSQL.Controllers
             }
             if (diagnosis == -1) return BadRequest(diagnosis);
             return Ok(diagnosis);
-        }
-
-        [HttpGet("[action]/{diagnosis_id}")]
-        // GET: GameContext/Questions/diagnosis_id
-        // возвращает список вопросов для конкретного диагноза
-        public string Questions(int diagnosis_id)
-        {
-            QuestionList list_of_questions = new QuestionList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT player_questions.id, player_questions.name
-                                    FROM player_questions
-                                    JOIN answers_questions_for_diagnoses ON answers_questions_for_diagnoses.question_id = player_questions.id
-                                    WHERE diagnosis_id = @diagnosis_id"
-                };
-                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
-                Command.Parameters.Add(diagnosisParam);
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
-                        list_of_questions.Add(question);
-                    }
-            }
-            string res = JsonSerializer.Serialize<QuestionList>(list_of_questions);
-            return res;
-        }
-        [HttpGet("[action]/{diagnosis_id}")]
-        // GET: GameContext/AnswersOnQuestions/diagnosis_id
-        // возвращает список вопрос-ответ для конкретного диагноза
-        public string AnswersOnQuestions(int diagnosis_id)
-        {
-            QuestionOnAnswerList list_of_questions = new QuestionOnAnswerList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT question_id, player_questions.name, answer_id, patient_answers.name
-                                    FROM answers_questions_for_diagnoses
-                                    JOIN player_questions ON answers_questions_for_diagnoses.question_id = player_questions.id
-                                    JOIN patient_answers ON answers_questions_for_diagnoses.answer_id = patient_answers.id
-                                    WHERE diagnosis_id = @diagnosis_id"
-                };
-                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
-                Command.Parameters.Add(diagnosisParam);
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        QuestionOnAnswer questionOnAnswer = new QuestionOnAnswer(sqlReader.GetInt32(0),
-                                                                                 sqlReader.GetString(1),
-                                                                                 sqlReader.GetInt32(2),
-                                                                                 sqlReader.GetString(3));
-                        list_of_questions.Add(questionOnAnswer);
-                    }
-            }
-            string res = JsonSerializer.Serialize<QuestionOnAnswerList>(list_of_questions);
-            return res;
-        }
-        //[HttpGet("[action]")]
-        //// GET: GameContext/Questions/
-        //// возвращает список всех вопросов
-        //public string Questions()
-        //{
-        //    QuestionList list_of_questions = new QuestionList();
-        //    using (var sConn = new NpgsqlConnection(sConnStr))
-        //    {
-        //        sConn.Open();
-        //        NpgsqlCommand Command = new NpgsqlCommand
-        //        {
-        //            Connection = sConn,
-        //            CommandText = @"SELECT player_questions.id, player_questions.name
-        //                            FROM player_questions"
-        //        };
-        //        using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-        //            while (sqlReader.Read())
-        //            {
-        //                Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
-        //                list_of_questions.Add(question);
-        //            }
-        //    }
-        //    string res = JsonSerializer.Serialize<QuestionList>(list_of_questions);
-        //    return res;
-        //}
-        //[HttpGet("[action]")]
-        //// GET: GameContext/Answers/
-        //// возвращает список всех ответов
-        //public string Answers()
-        //{
-        //    AnswerList list_of_answers = new AnswerList();
-        //    using (var sConn = new NpgsqlConnection(sConnStr))
-        //    {
-        //        sConn.Open();
-        //        NpgsqlCommand Command = new NpgsqlCommand
-        //        {
-        //            Connection = sConn,
-        //            CommandText = @"SELECT id, name
-        //                            FROM patient_answers"
-        //        };
-        //        using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-        //            while (sqlReader.Read())
-        //            {
-        //                Answer answer = new Answer(sqlReader.GetInt32(0), sqlReader.GetString(1));
-        //                list_of_answers.Add(answer);
-        //            }
-        //    }
-        //    string res = JsonSerializer.Serialize<AnswerList>(list_of_answers);
-        //    return res;
-        //}
-
-        [HttpGet("[action]")]
-        // GET: GameContext/Analyses
-        // возвращает список ВСЕХ возможных осмотров/анализов
-        public string Analyses()
-        {
-            AnalysisList analysisList = new AnalysisList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT id, name, type_is_enum
-                                    FROM patient_indicators"
-                };
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        Analysis analysis = new Analysis(sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetBoolean(2));
-                        analysisList.Add(analysis);
-                    }
-            }
-            string res = JsonSerializer.Serialize<AnalysisList>(analysisList);
-            return res;
         }
 
         //[HttpGet("[action]")]
@@ -310,189 +170,6 @@ namespace foreversickWebAppPSQL.Controllers
             };
             string res = JsonSerializer.Serialize<DiagnosisList>(diagnosisList, options);
             return res;
-        }
-
-        [HttpGet("[action]/{substring}")]
-        //GET: GameContext/NumericalIndicatorsBySubstring
-        // возвращает список ВСЕХ числовых индикаторов, в названии которых есть подстрока substring
-        public string NumericalIndicatorsBySubstring(string substring)
-        {
-            NumericalIndicatorList indicatorsList = new NumericalIndicatorList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT indicator_id,
-                                           name,
-                                           min_value,
-                                           max_value,
-                                           normal_min,
-                                           normal_max,
-                                           units_name,
-                                           accuracy
-                                    FROM numerical_indicators_ranges
-                                    JOIN patient_indicators ON numerical_indicators_ranges.indicator_id = patient_indicators.id
-                                    WHERE name ILIKE '%' || @substring || '%'"
-                };
-                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
-                Command.Parameters.Add(substring_param);
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        NumericalIndicator indicator = new NumericalIndicator(sqlReader.GetInt32(0), 
-                                                                              sqlReader.GetString(1),
-                                                                              sqlReader.GetDouble(2),
-                                                                              sqlReader.GetDouble(3),
-                                                                              sqlReader.GetDouble(4),
-                                                                              sqlReader.GetDouble(5),
-                                                                              sqlReader.GetString(6),
-                                                                              sqlReader.GetInt32(7));
-                        indicatorsList.Add(indicator);
-                    }
-            }
-
-            var options = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
-                WriteIndented = true
-            };
-            string res = JsonSerializer.Serialize<NumericalIndicatorList>(indicatorsList, options);
-            return res;
-        }
-
-        [HttpGet("[action]/{substring}")]
-        //GET: GameContext/QuestionsBySubstring
-        // возвращает список ВСЕХ вопросов, в тексте которых есть подстрока substring
-        public string QuestionsBySubstring(string substring)
-        {
-            QuestionList questionList = new QuestionList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT id,
-                                           name
-                                    FROM player_questions
-                                    WHERE name ILIKE '%' || @substring || '%'"
-                };
-                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
-                Command.Parameters.Add(substring_param);
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
-                        questionList.Add(question);
-                    }
-            }
-            var options = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
-                WriteIndented = true
-            };
-            string res = JsonSerializer.Serialize<QuestionList>(questionList, options);
-            return res;
-        }
-
-        [HttpGet("[action]/{substring}")]
-        //GET: GameContext/AnswersBySubstring
-        // возвращает список ВСЕХ ответов, в тексте которых есть подстрока substring
-        public string AnswersBySubstring(string substring)
-        {
-            AnswerList answerList = new AnswerList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT id,
-                                           name
-                                    FROM patient_answers
-                                    WHERE name ILIKE '%' || @substring || '%'"
-                };
-                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
-                Command.Parameters.Add(substring_param);
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        Answer answer = new Answer(sqlReader.GetInt32(0), sqlReader.GetString(1));
-                        answerList.Add(answer);
-                    }
-            }
-            var options = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
-                WriteIndented = true
-            };
-            string res = JsonSerializer.Serialize<AnswerList>(answerList, options);
-            return res;
-        }
-
-        [HttpGet("[action]/suggestions")]
-        //GET: GameContext/Diagnoses/suggestions
-        // возвращает список ВСЕХ диагнозов, для которых есть предложения пользователей
-        public string Diagnoses()
-        {
-            DiagnosisList diagnosisList = new DiagnosisList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT id,
-                                           mkb_name,
-                                           mkb_code
-                                    FROM diagnoses
-                                    WHERE id IN (SELECT diagnosis_id FROM user_suggestions)"
-                };
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        Diagnosis diagnosis = new Diagnosis(sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2));
-                        diagnosisList.Add(diagnosis);
-                    }
-            }
-            var options = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
-                WriteIndented = true
-            };
-            string res = JsonSerializer.Serialize<DiagnosisList>(diagnosisList, options);
-            return res;
-        }
-
-        [HttpGet("[action]/{diagnosis_id}")]
-        //GET: GameContext/Suggestions/diagnosis_id
-        // возвращает список предложений для конкретного диагноза
-        public string Suggestions(int diagnosis_id)
-        {
-            UserSuggestionList userSuggestionList = new UserSuggestionList();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT diagnosis_id, symptoms, visible_signs, questions_and_answers, id
-                                    FROM user_suggestions WHERE diagnosis_id = @diagnosis_id"
-                };
-                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
-                Command.Parameters.Add(diagnosisParam);
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                    {
-                        UserSuggestion suggestion = new UserSuggestion(sqlReader.GetInt32(4), sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2), sqlReader.GetString(3));
-                        userSuggestionList.Add(suggestion);
-                    }
-            }
-            string res = JsonSerializer.Serialize<UserSuggestionList>(userSuggestionList);
-            return res;
-
         }
 
         [HttpGet("[action]/{сategory_id}")]
@@ -622,21 +299,59 @@ namespace foreversickWebAppPSQL.Controllers
         //    return res;
         //}
 
-        [HttpGet("[action]/{diagnosis_id}")]
-        // GET: GameContext/VisibleSigns/diagnosis_id
-        // возвращает список внешних проявлений для конкретного диагноза
-        public string VisibleSigns(int diagnosis_id)
+        [HttpGet("[action]/suggestions")]
+        //GET: GameContext/Diagnoses/suggestions
+        // возвращает список ВСЕХ диагнозов, для которых есть предложения пользователей
+        public string Diagnoses()
         {
-            VisibleSignList visibleSignList = new VisibleSignList();
+            DiagnosisList diagnosisList = new DiagnosisList();
             using (var sConn = new NpgsqlConnection(sConnStr))
             {
                 sConn.Open();
                 NpgsqlCommand Command = new NpgsqlCommand
                 {
                     Connection = sConn,
-                    CommandText = @"SELECT id, name, readable_id
-                                    FROM visible_signs
-                                    JOIN visible_signs_of_diagnoses ON visible_signs.id = visible_signs_of_diagnoses.visible_sign_id
+                    CommandText = @"SELECT id,
+                                           mkb_name,
+                                           mkb_code
+                                    FROM diagnoses
+                                    WHERE id IN (SELECT diagnosis_id FROM user_suggestions)"
+                };
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Diagnosis diagnosis = new Diagnosis(sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2));
+                        diagnosisList.Add(diagnosis);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<DiagnosisList>(diagnosisList, options);
+            return res;
+        }
+        #endregion DIAGNOSIS TABLE
+
+        #region QUESTIONS AND ANSWERS TABLES
+        #region Q&A
+        [HttpGet("[action]/{diagnosis_id}")]
+        // GET: GameContext/AnswersOnQuestions/diagnosis_id
+        // возвращает список вопрос-ответ для конкретного диагноза
+        public string AnswersOnQuestions(int diagnosis_id)
+        {
+            QuestionOnAnswerList list_of_questions = new QuestionOnAnswerList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT question_id, player_questions.name, answer_id, patient_answers.name
+                                    FROM answers_questions_for_diagnoses
+                                    JOIN player_questions ON answers_questions_for_diagnoses.question_id = player_questions.id
+                                    JOIN patient_answers ON answers_questions_for_diagnoses.answer_id = patient_answers.id
                                     WHERE diagnosis_id = @diagnosis_id"
                 };
                 NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
@@ -644,12 +359,302 @@ namespace foreversickWebAppPSQL.Controllers
                 using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
                     while (sqlReader.Read())
                     {
-                        VisibleSign visibleSign = new VisibleSign(sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2));
-                        visibleSignList.Add(visibleSign);
+                        QuestionOnAnswer questionOnAnswer = new QuestionOnAnswer(sqlReader.GetInt32(0),
+                                                                                 sqlReader.GetString(1),
+                                                                                 sqlReader.GetInt32(2),
+                                                                                 sqlReader.GetString(3));
+                        list_of_questions.Add(questionOnAnswer);
                     }
+            }
+            string res = JsonSerializer.Serialize<QuestionOnAnswerList>(list_of_questions);
+            return res;
+        }
+
+        [HttpPost("[action]")]
+        // POST: GameContext/DiagnosisQuestionAnswer/
+        // добавляет пару вопрос-ответ для диагноза
+        public int DiagnosisQuestionAnswer(answers_questions_for_diagnosesString request/*int diagnosis_id, int question_id, int answer_id*/)
+        {
+            int res = -1;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO answers_questions_for_diagnoses (diagnosis_id, question_id, answer_id) 
+                                    VALUES (@diagnosis_id, @question_id, @answer_id)"
+                };
+                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", request.diagnosis_id);
+                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", request.question_id);
+                NpgsqlParameter answer_idParam = new NpgsqlParameter("@answer_id", request.answer_id);
+                Command.Parameters.Add(diagnosis_idParam);
+                Command.Parameters.Add(question_idParam);
+                Command.Parameters.Add(answer_idParam);
+                res = Command.ExecuteNonQuery();
                 sConn.Close();
             }
-            string res = JsonSerializer.Serialize<VisibleSignList>(visibleSignList);
+            return res;
+        }
+
+        [HttpDelete("[action]/{diagnosis_id}-{question_id}")]
+        // DELETE:GameContext/AnswerOnQuestionDelete
+        // удаляет ответ на вопрос для диагноза
+        public void AnswerOnQuestionDelete(int diagnosis_id, int question_id)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"DELETE FROM answers_questions_for_diagnoses WHERE diagnosis_id = @diagnosis_id AND question_id = @question_id"
+                };
+                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", question_id);
+                Command.Parameters.Add(diagnosis_idParam);
+                Command.Parameters.Add(question_idParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
+
+        [HttpPut("[action]/{diagnosis_id}-{question_id}-{new_question_id}-{new_answer_id}")]
+        // PUT: GameContext/AnswerOnQuestionUpdate
+        // изменяет ответ на вопрос для диагноза
+        public void AnswerOnQuestionUpdate(int diagnosis_id, int question_id, int new_question_id, int new_answer_id)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"UPDATE answers_questions_for_diagnoses
+                                    SET question_id = @new_question_id, answer_id = @new_answer_id
+                                    WHERE diagnosis_id = @diagnosis_id AND question_id =@question_id"
+                };
+                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", question_id);
+                NpgsqlParameter new_question_idParam = new NpgsqlParameter("@new_question_id", new_question_id);
+                NpgsqlParameter new_answer_idParam = new NpgsqlParameter("@new_answer_id", new_answer_id);
+                Command.Parameters.Add(diagnosis_idParam);
+                Command.Parameters.Add(question_idParam);
+                Command.Parameters.Add(new_question_idParam);
+                Command.Parameters.Add(new_answer_idParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
+
+        #endregion Q&A
+        #region QUESTIONS
+
+        [HttpGet("[action]/{diagnosis_id}")]
+        // GET: GameContext/Questions/diagnosis_id
+        // возвращает список вопросов для конкретного диагноза
+        public string Questions(int diagnosis_id)
+        {
+            QuestionList list_of_questions = new QuestionList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT player_questions.id, player_questions.name
+                                    FROM player_questions
+                                    JOIN answers_questions_for_diagnoses ON answers_questions_for_diagnoses.question_id = player_questions.id
+                                    WHERE diagnosis_id = @diagnosis_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                Command.Parameters.Add(diagnosisParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
+                        list_of_questions.Add(question);
+                    }
+            }
+            string res = JsonSerializer.Serialize<QuestionList>(list_of_questions);
+            return res;
+        }
+
+        //[HttpGet("[action]")]
+        //// GET: GameContext/Questions/
+        //// возвращает список всех вопросов
+        //public string Questions()
+        //{
+        //    QuestionList list_of_questions = new QuestionList();
+        //    using (var sConn = new NpgsqlConnection(sConnStr))
+        //    {
+        //        sConn.Open();
+        //        NpgsqlCommand Command = new NpgsqlCommand
+        //        {
+        //            Connection = sConn,
+        //            CommandText = @"SELECT player_questions.id, player_questions.name
+        //                            FROM player_questions"
+        //        };
+        //        using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+        //            while (sqlReader.Read())
+        //            {
+        //                Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
+        //                list_of_questions.Add(question);
+        //            }
+        //    }
+        //    string res = JsonSerializer.Serialize<QuestionList>(list_of_questions);
+        //    return res;
+        //}
+
+        [HttpGet("[action]/{substring}")]
+        //GET: GameContext/QuestionsBySubstring
+        // возвращает список ВСЕХ вопросов, в тексте которых есть подстрока substring
+        public string QuestionsBySubstring(string substring)
+        {
+            QuestionList questionList = new QuestionList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id,
+                                           name
+                                    FROM player_questions
+                                    WHERE name ILIKE '%' || @substring || '%'"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
+                        questionList.Add(question);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<QuestionList>(questionList, options);
+            return res;
+        }
+
+        [HttpGet("[action]/{diagnosis_id}-{question_id}")]
+        // GET: GameContext/DiagnosisQuestionValidation/diagnosis_id-question_id
+        // возвращает 1, если на вопрос есть ответ для этого диагноза (то есть есть пара диагноз-вопрос в таблице)
+        // иначе, очевидно, 0
+        public int DiagnosisQuestionValidation(int diagnosis_id, int question_id)
+        {
+            int count = 0;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT count(*)
+                                    FROM answers_questions_for_diagnoses
+                                    WHERE diagnosis_id = @diagnosis_id
+                                    AND question_id = @question_id;"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter questionParam = new NpgsqlParameter("@question_id", question_id);
+                Command.Parameters.Add(diagnosisParam);
+                Command.Parameters.Add(questionParam);
+
+                int.TryParse(Command.ExecuteScalar().ToString(), out count);
+                sConn.Close();
+            }
+            return count;
+        }
+
+        [HttpPost("[action]")]
+        // POST: GameContext/Question
+        // добавляет вариант вопроса
+        public int Question(Question question)
+        {
+            int res = -1;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO player_questions (name)
+                                    VALUES (@question)
+                                    RETURNING id"
+                };
+                NpgsqlParameter question_name = new NpgsqlParameter("@question", question.question_text);
+                Command.Parameters.Add(question_name);
+                int.TryParse(Command.ExecuteScalar().ToString(), out res);
+                sConn.Close();
+            }
+            return res;
+        }
+
+        #endregion QUESTIONS
+        #region ANSWERS
+
+        //[HttpGet("[action]")]
+        //// GET: GameContext/Answers/
+        //// возвращает список всех ответов
+        //public string Answers()
+        //{
+        //    AnswerList list_of_answers = new AnswerList();
+        //    using (var sConn = new NpgsqlConnection(sConnStr))
+        //    {
+        //        sConn.Open();
+        //        NpgsqlCommand Command = new NpgsqlCommand
+        //        {
+        //            Connection = sConn,
+        //            CommandText = @"SELECT id, name
+        //                            FROM patient_answers"
+        //        };
+        //        using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+        //            while (sqlReader.Read())
+        //            {
+        //                Answer answer = new Answer(sqlReader.GetInt32(0), sqlReader.GetString(1));
+        //                list_of_answers.Add(answer);
+        //            }
+        //    }
+        //    string res = JsonSerializer.Serialize<AnswerList>(list_of_answers);
+        //    return res;
+        //}
+
+        [HttpGet("[action]/{substring}")]
+        //GET: GameContext/AnswersBySubstring
+        // возвращает список ВСЕХ ответов, в тексте которых есть подстрока substring
+        public string AnswersBySubstring(string substring)
+        {
+            AnswerList answerList = new AnswerList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id,
+                                           name
+                                    FROM patient_answers
+                                    WHERE name ILIKE '%' || @substring || '%'"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Answer answer = new Answer(sqlReader.GetInt32(0), sqlReader.GetString(1));
+                        answerList.Add(answer);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<AnswerList>(answerList, options);
             return res;
         }
 
@@ -683,87 +688,111 @@ namespace foreversickWebAppPSQL.Controllers
             return Ok(answer);
         }
 
-        [HttpGet("[action]/{diagnosis_id}-{question_id}")]
-        // GET: GameContext/DiagnosisQuestionValidation/diagnosis_id-question_id
-        // возвращает 1, если на вопрос есть ответ для этого диагноза (то есть есть пара диагноз-вопрос в таблице)
-        // иначе, очевидно, 0
-        public int DiagnosisQuestionValidation(int diagnosis_id, int question_id)
+        [HttpPost("[action]")]
+        // POST: GameContext/Answer
+        // добавляет вариант ответа
+        public int Answer(Answer answer)
         {
-            int count = 0;
+            int res = -1;
             using (var sConn = new NpgsqlConnection(sConnStr))
             {
                 sConn.Open();
                 NpgsqlCommand Command = new NpgsqlCommand
                 {
                     Connection = sConn,
-                    CommandText = @"SELECT count(*)
-                                    FROM answers_questions_for_diagnoses
-                                    WHERE diagnosis_id = @diagnosis_id
-                                    AND question_id = @question_id;"
+                    CommandText = @"INSERT INTO patient_answers (name)
+                                    VALUES (@answer)
+                                    RETURNING id"
                 };
-                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
-                NpgsqlParameter questionParam = new NpgsqlParameter("@question_id", question_id);
-                Command.Parameters.Add(diagnosisParam);
-                Command.Parameters.Add(questionParam);
-
-                int.TryParse(Command.ExecuteScalar().ToString(), out count);
+                NpgsqlParameter answer_name = new NpgsqlParameter("@answer", answer.answer_text);
+                Command.Parameters.Add(answer_name);
+                int.TryParse(Command.ExecuteScalar().ToString(), out res);
                 sConn.Close();
             }
-            return count;
+            return res;
         }
 
-        [HttpGet("[action]/{diagnosis_id}-{indicator_id}")]
-        // GET: GameContext/AnswerOnEnumAnalysis/diagnosis_id-indicator_id
-        // возвращает ответ на перечислимый индикатор для конкретного диагноза
-        // если у конкретного диагноза нет специфичного значения индикатора, возвращается нормальный
-        public string AnswerOnEnumAnalysis(int diagnosis_id, int indicator_id)
+        #endregion ANSWERS
+        #endregion QUESTION AND ANSWERS TABLES
+
+        #region ANALYSES TABLES
+        #region BOTH
+        [HttpGet("[action]")]
+        // GET: GameContext/Analyses
+        // возвращает список ВСЕХ возможных осмотров/анализов
+        public string Analyses()
         {
-            // тут два случая: у диагноза есть специфичные для него значения этого показателя
-            // например, у какой-нибудь болезни кожа пятнышками
-            // а может оказаться так, что у болезни этот показатель в норме
-            // короче, я просто сначала ищу специфичные, если не нахожу, ищу нормалньные
-            List<string> answers = new List<string>();
+            AnalysisList analysisList = new AnalysisList();
             using (var sConn = new NpgsqlConnection(sConnStr))
             {
                 sConn.Open();
                 NpgsqlCommand Command = new NpgsqlCommand
                 {
                     Connection = sConn,
-                    CommandText = @"SELECT name
-                                    FROM enumerated_indicators_of_diagnoses
-                                    JOIN enumerated_indicators_values ON enumerated_indicators_of_diagnoses.value_id = enumerated_indicators_values.id
-                                    WHERE diagnosis_id = @diagnosis_id AND indicator_id = @indicator_id"
+                    CommandText = @"SELECT id, name, type_is_enum
+                                    FROM patient_indicators"
                 };
-                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
-                NpgsqlParameter indicatorParam = new NpgsqlParameter("@indicator_id", indicator_id);
-                Command.Parameters.Add(diagnosisParam);
-                Command.Parameters.Add(indicatorParam);
                 using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
                     while (sqlReader.Read())
-                        answers.Add(sqlReader.GetString(0));
+                    {
+                        Analysis analysis = new Analysis(sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetBoolean(2));
+                        analysisList.Add(analysis);
+                    }
             }
-            if (answers.Count > 0)
-                return string.Join(", ", answers);
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"SELECT name
-                                    FROM enumerated_indicators_values
-                                    JOIN enumerated_indicators_values_in_types ON enumerated_indicators_values.id = enumerated_indicators_values_in_types.value_id
-                                    WHERE indicator_id = @indicator_id AND isnormal_bool = true"
-                };
-                NpgsqlParameter indicatorParam = new NpgsqlParameter("@indicator_id", indicator_id);
-                Command.Parameters.Add(indicatorParam);
-                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
-                    while (sqlReader.Read())
-                        answers.Add(sqlReader.GetString(0));
-            }
-            return string.Join(", ", answers);
+            string res = JsonSerializer.Serialize<AnalysisList>(analysisList);
+            return res;
         }
+        #endregion BOTH
+        #region NUMERICAL
+        [HttpGet("[action]/{substring}")]
+        //GET: GameContext/NumericalIndicatorsBySubstring
+        // возвращает список ВСЕХ числовых индикаторов, в названии которых есть подстрока substring
+        public string NumericalIndicatorsBySubstring(string substring)
+        {
+            NumericalIndicatorList indicatorsList = new NumericalIndicatorList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT indicator_id,
+                                           name,
+                                           min_value,
+                                           max_value,
+                                           normal_min,
+                                           normal_max,
+                                           units_name,
+                                           accuracy
+                                    FROM numerical_indicators_ranges
+                                    JOIN patient_indicators ON numerical_indicators_ranges.indicator_id = patient_indicators.id
+                                    WHERE name ILIKE '%' || @substring || '%'"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        NumericalIndicator indicator = new NumericalIndicator(sqlReader.GetInt32(0),
+                                                                              sqlReader.GetString(1),
+                                                                              sqlReader.GetDouble(2),
+                                                                              sqlReader.GetDouble(3),
+                                                                              sqlReader.GetDouble(4),
+                                                                              sqlReader.GetDouble(5),
+                                                                              sqlReader.GetString(6),
+                                                                              sqlReader.GetInt32(7));
+                        indicatorsList.Add(indicator);
+                    }
+            }
 
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<NumericalIndicatorList>(indicatorsList, options);
+            return res;
+        }
         // выдаёт рандомное значение между минимальным и максимальным с заданной точностью
         public string GetRandomParam(double min, double max, int accuracy)
         {
@@ -873,7 +902,7 @@ namespace foreversickWebAppPSQL.Controllers
                                                                               sqlReader.GetDouble(6),
                                                                               sqlReader.GetString(7),
                                                                               sqlReader.GetInt32(8));
-                        NumericalIndicatorInDiagnosis indicatorInDiagnosis = new NumericalIndicatorInDiagnosis(sqlReader.GetInt32(0), 
+                        NumericalIndicatorInDiagnosis indicatorInDiagnosis = new NumericalIndicatorInDiagnosis(sqlReader.GetInt32(0),
                                                                                                                indicator,
                                                                                                                sqlReader.GetDouble(9),
                                                                                                                sqlReader.GetDouble(10));
@@ -1054,7 +1083,175 @@ namespace foreversickWebAppPSQL.Controllers
             }
             return count;
         }
+        #endregion NUMERICAL
+        #region ENUMERATED
+        [HttpGet("[action]/{diagnosis_id}-{indicator_id}")]
+        // GET: GameContext/AnswerOnEnumAnalysis/diagnosis_id-indicator_id
+        // возвращает ответ на перечислимый индикатор для конкретного диагноза
+        // если у конкретного диагноза нет специфичного значения индикатора, возвращается нормальный
+        public string AnswerOnEnumAnalysis(int diagnosis_id, int indicator_id)
+        {
+            // тут два случая: у диагноза есть специфичные для него значения этого показателя
+            // например, у какой-нибудь болезни кожа пятнышками
+            // а может оказаться так, что у болезни этот показатель в норме
+            // короче, я просто сначала ищу специфичные, если не нахожу, ищу нормалньные
+            List<string> answers = new List<string>();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT name
+                                    FROM enumerated_indicators_of_diagnoses
+                                    JOIN enumerated_indicators_values ON enumerated_indicators_of_diagnoses.value_id = enumerated_indicators_values.id
+                                    WHERE diagnosis_id = @diagnosis_id AND indicator_id = @indicator_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter indicatorParam = new NpgsqlParameter("@indicator_id", indicator_id);
+                Command.Parameters.Add(diagnosisParam);
+                Command.Parameters.Add(indicatorParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                        answers.Add(sqlReader.GetString(0));
+            }
+            if (answers.Count > 0)
+                return string.Join(", ", answers);
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT name
+                                    FROM enumerated_indicators_values
+                                    JOIN enumerated_indicators_values_in_types ON enumerated_indicators_values.id = enumerated_indicators_values_in_types.value_id
+                                    WHERE indicator_id = @indicator_id AND isnormal_bool = true"
+                };
+                NpgsqlParameter indicatorParam = new NpgsqlParameter("@indicator_id", indicator_id);
+                Command.Parameters.Add(indicatorParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                        answers.Add(sqlReader.GetString(0));
+            }
+            return string.Join(", ", answers);
+        }
+        #endregion ENUMERATED
+        #endregion ANALYSES TABLES
 
+        #region SUGGESTION TABLE
+        [HttpGet("[action]/{diagnosis_id}")]
+        //GET: GameContext/Suggestions/diagnosis_id
+        // возвращает список предложений для конкретного диагноза
+        public string Suggestions(int diagnosis_id)
+        {
+            UserSuggestionList userSuggestionList = new UserSuggestionList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT diagnosis_id, symptoms, visible_signs, questions_and_answers, id
+                                    FROM user_suggestions WHERE diagnosis_id = @diagnosis_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                Command.Parameters.Add(diagnosisParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        UserSuggestion suggestion = new UserSuggestion(sqlReader.GetInt32(4), sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2), sqlReader.GetString(3));
+                        userSuggestionList.Add(suggestion);
+                    }
+            }
+            string res = JsonSerializer.Serialize<UserSuggestionList>(userSuggestionList);
+            return res;
+
+        }
+        [HttpPost("[action]")]
+        // POST: GameContext/Suggestion
+        public ActionResult Suggestion(Body body)
+        {
+            int res = -1;
+            if (body.id < 0 || string.IsNullOrEmpty(body.simptoms + body.questions + body.visuals))
+                return BadRequest();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO user_suggestions (diagnosis_id, symptoms, visible_signs, questions_and_answers)
+                                    VALUES (@diagnosis_id, @symptoms, @visible_signs, @questions_and_answers)"
+                };
+                NpgsqlParameter diagnosis_id = new NpgsqlParameter("@diagnosis_id", body.id);
+                NpgsqlParameter symptoms = new NpgsqlParameter("@symptoms", body.simptoms);
+                NpgsqlParameter visible_signs = new NpgsqlParameter("@visible_signs", body.visuals);
+                NpgsqlParameter questions_and_answers = new NpgsqlParameter("@questions_and_answers", body.questions);
+                Command.Parameters.Add(diagnosis_id);
+                Command.Parameters.Add(symptoms);
+                Command.Parameters.Add(visible_signs);
+                Command.Parameters.Add(questions_and_answers);
+                res = Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+            return Ok(res);
+        }
+        [HttpDelete("[action]/{user_suggestion_id}")]
+        // DELETE: GameContext/Suggestion/
+        // удаляет предложение пользователя по идентификатору
+        public void Suggestion(int user_suggestion_id)
+        {
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"DELETE FROM user_suggestions WHERE id = @user_suggestion_id"
+                };
+                NpgsqlParameter user_suggestion_idParam = new NpgsqlParameter("@user_suggestion_id", user_suggestion_id);
+                Command.Parameters.Add(user_suggestion_idParam);
+                Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+        }
+        #endregion SUGGESTION TABLE
+
+        #region VISIBLE SIGNS TABLE
+        [HttpGet("[action]/{diagnosis_id}")]
+        // GET: GameContext/VisibleSigns/diagnosis_id
+        // возвращает список внешних проявлений для конкретного диагноза
+        public string VisibleSigns(int diagnosis_id)
+        {
+            VisibleSignList visibleSignList = new VisibleSignList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id, name, readable_id
+                                    FROM visible_signs
+                                    JOIN visible_signs_of_diagnoses ON visible_signs.id = visible_signs_of_diagnoses.visible_sign_id
+                                    WHERE diagnosis_id = @diagnosis_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                Command.Parameters.Add(diagnosisParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        VisibleSign visibleSign = new VisibleSign(sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2));
+                        visibleSignList.Add(visibleSign);
+                    }
+                sConn.Close();
+            }
+            string res = JsonSerializer.Serialize<VisibleSignList>(visibleSignList);
+            return res;
+        }
+        #endregion VISIBLE SIGNS TABLE
+
+        #region GAME RESULT TABLE
         [HttpPost("[action]")]
         // POST: GameContext/PostGameResult/player_id-right_diagnosis_id-given_diagnosis_id
         // записывает результат игры в бд
@@ -1081,183 +1278,8 @@ namespace foreversickWebAppPSQL.Controllers
             }
             return res;
         }
+        #endregion GAME RESULT TABLE
 
-        [HttpPost("[action]")]
-        // POST: GameContext/Question
-        // добавляет вариант вопроса
-        public int Question(Question question)
-        {
-            int res = -1;
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"INSERT INTO player_questions (name)
-                                    VALUES (@question)
-                                    RETURNING id"
-                };
-                NpgsqlParameter question_name = new NpgsqlParameter("@question", question.question_text);
-                Command.Parameters.Add(question_name);
-                int.TryParse(Command.ExecuteScalar().ToString(), out res);
-                sConn.Close();
-            }
-            return res;
-        }
-        [HttpPost("[action]")]
-        // POST: GameContext/Answer
-        // добавляет вариант ответа
-        public int Answer(Answer answer)
-        {
-            int res = -1;
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"INSERT INTO patient_answers (name)
-                                    VALUES (@answer)
-                                    RETURNING id"
-                };
-                NpgsqlParameter answer_name = new NpgsqlParameter("@answer", answer.answer_text);
-                Command.Parameters.Add(answer_name);
-                int.TryParse(Command.ExecuteScalar().ToString(), out res);
-                sConn.Close();
-            }
-            return res;
-        }
-        [HttpPost("[action]")]
-        // POST: GameContext/Suggestion
-        public ActionResult Suggestion(Body body)
-        {
-            int res = -1;
-            if (body.id < 0 || string.IsNullOrEmpty(body.simptoms + body.questions + body.visuals))
-                return BadRequest();
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"INSERT INTO user_suggestions (diagnosis_id, symptoms, visible_signs, questions_and_answers)
-                                    VALUES (@diagnosis_id, @symptoms, @visible_signs, @questions_and_answers)"
-                };
-                NpgsqlParameter diagnosis_id = new NpgsqlParameter("@diagnosis_id", body.id);
-                NpgsqlParameter symptoms = new NpgsqlParameter("@symptoms", body.simptoms);
-                NpgsqlParameter visible_signs = new NpgsqlParameter("@visible_signs", body.visuals);
-                NpgsqlParameter questions_and_answers = new NpgsqlParameter("@questions_and_answers", body.questions);
-                Command.Parameters.Add(diagnosis_id);
-                Command.Parameters.Add(symptoms);
-                Command.Parameters.Add(visible_signs);
-                Command.Parameters.Add(questions_and_answers);
-                //Command.Parameters.Add("@diagnosis_id", (NpgsqlTypes.NpgsqlDbType)System.Data.DbType.Int32).Value = body.id;
-                //Command.Parameters.Add("@symptoms", (NpgsqlTypes.NpgsqlDbType)System.Data.DbType.AnsiString).Value = body.simptoms;
-                //Command.Parameters.Add("@visible_signs", (NpgsqlTypes.NpgsqlDbType)System.Data.DbType.AnsiString).Value = body.visuals;
-                //Command.Parameters.Add("@questions_and_answers", (NpgsqlTypes.NpgsqlDbType)System.Data.DbType.AnsiString).Value = body.questions;
-                res = Command.ExecuteNonQuery();
-                sConn.Close();
-            }
-            return Ok(res);
-        }
-
-        [HttpPost("[action]")]
-        // POST: GameContext/DiagnosisQuestionAnswer/
-        // добавляет пару вопрос-ответ для диагноза
-        public int DiagnosisQuestionAnswer(answers_questions_for_diagnosesString request/*int diagnosis_id, int question_id, int answer_id*/)
-        {
-            int res = -1;
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"INSERT INTO answers_questions_for_diagnoses (diagnosis_id, question_id, answer_id) 
-                                    VALUES (@diagnosis_id, @question_id, @answer_id)"
-                };
-                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", request.diagnosis_id);
-                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", request.question_id);
-                NpgsqlParameter answer_idParam = new NpgsqlParameter("@answer_id", request.answer_id);
-                Command.Parameters.Add(diagnosis_idParam);
-                Command.Parameters.Add(question_idParam);
-                Command.Parameters.Add(answer_idParam);
-                res = Command.ExecuteNonQuery();
-                sConn.Close();
-            }
-            return res;
-        }
-
-        [HttpDelete("[action]/{user_suggestion_id}")]
-        // DELETE: GameContext/Suggestion/
-        // удаляет предложение пользователя по идентификатору
-        public void Suggestion(int user_suggestion_id)
-        {
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"DELETE FROM user_suggestions WHERE id = @user_suggestion_id"
-                };
-                NpgsqlParameter user_suggestion_idParam = new NpgsqlParameter("@user_suggestion_id", user_suggestion_id);
-                Command.Parameters.Add(user_suggestion_idParam);
-                Command.ExecuteNonQuery();
-                sConn.Close();
-            }
-        }
-
-        [HttpDelete("[action]/{diagnosis_id}-{question_id}")]
-        // DELETE:GameContext/AnswerOnQuestionDelete
-        // удаляет ответ на вопрос для диагноза
-        public void AnswerOnQuestionDelete(int diagnosis_id, int question_id)
-        {
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"DELETE FROM answers_questions_for_diagnoses WHERE diagnosis_id = @diagnosis_id AND question_id = @question_id"
-                };
-                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
-                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", question_id);
-                Command.Parameters.Add(diagnosis_idParam);
-                Command.Parameters.Add(question_idParam);
-                Command.ExecuteNonQuery();
-                sConn.Close();
-            }
-        }
-
-        [HttpPut("[action]/{diagnosis_id}-{question_id}-{new_question_id}-{new_answer_id}")]
-        // PUT: GameContext/AnswerOnQuestionUpdate
-        // изменяет ответ на вопрос для диагноза
-        public void AnswerOnQuestionUpdate(int diagnosis_id, int question_id, int new_question_id, int new_answer_id)
-        {
-            using (var sConn = new NpgsqlConnection(sConnStr))
-            {
-                sConn.Open();
-                NpgsqlCommand Command = new NpgsqlCommand
-                {
-                    Connection = sConn,
-                    CommandText = @"UPDATE answers_questions_for_diagnoses
-                                    SET question_id = @new_question_id, answer_id = @new_answer_id
-                                    WHERE diagnosis_id = @diagnosis_id AND question_id =@question_id"
-                };
-                NpgsqlParameter diagnosis_idParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
-                NpgsqlParameter question_idParam = new NpgsqlParameter("@question_id", question_id);
-                NpgsqlParameter new_question_idParam = new NpgsqlParameter("@new_question_id", new_question_id);
-                NpgsqlParameter new_answer_idParam = new NpgsqlParameter("@new_answer_id", new_answer_id);
-                Command.Parameters.Add(diagnosis_idParam);
-                Command.Parameters.Add(question_idParam);
-                Command.Parameters.Add(new_question_idParam);
-                Command.Parameters.Add(new_answer_idParam);
-                Command.ExecuteNonQuery();
-                sConn.Close();
-            }
-        }
     }
 
     public class Body
@@ -1274,6 +1296,4 @@ namespace foreversickWebAppPSQL.Controllers
         public int right_diagnosis_id { get; set; }
         public int given_diagnosis_id { get; set; }
     }
-
-    
 }
