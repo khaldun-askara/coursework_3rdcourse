@@ -152,10 +152,46 @@ namespace foreversickWebAppPSQL.Controllers
                                            mkb_code
                                     FROM diagnoses
                                     WHERE mkb_code IS NOT NULL AND
-                                    (mkb_name ILIKE '%' || @substring || '%')"
+                                    (mkb_name ILIKE '%' || @substring || '%')
+                                    LIMIT 100"
                 };
                 NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
                 Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Diagnosis diagnosis = new Diagnosis(sqlReader.GetInt32(0), sqlReader.GetString(1), sqlReader.GetString(2));
+                        diagnosisList.Add(diagnosis);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<DiagnosisList>(diagnosisList, options);
+            return res;
+        }
+
+        [HttpGet("[action]")]
+        //GET: GameContext/DiagnosesBySubstring
+        // возвращает список первых 100 диагнозов
+        public string DiagnosesBySubstring()
+        {
+            DiagnosisList diagnosisList = new DiagnosisList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id,
+                                           mkb_name,
+                                           mkb_code
+                                    FROM diagnoses
+                                    WHERE mkb_code IS NOT NULL
+                                    LIMIT 100"
+                };
                 using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
                     while (sqlReader.Read())
                     {
@@ -521,10 +557,44 @@ namespace foreversickWebAppPSQL.Controllers
                     CommandText = @"SELECT id,
                                            name
                                     FROM player_questions
-                                    WHERE name ILIKE '%' || @substring || '%'"
+                                    WHERE name ILIKE '%' || @substring || '%'
+                                    LIMIT 100"
                 };
                 NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
                 Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Question question = new Question(sqlReader.GetInt32(0), sqlReader.GetString(1));
+                        questionList.Add(question);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<QuestionList>(questionList, options);
+            return res;
+        }
+
+        [HttpGet("[action]")]
+        //GET: GameContext/QuestionsBySubstring
+        // возвращает список первых 100 вопросов
+        public string QuestionsBySubstring()
+        {
+            QuestionList questionList = new QuestionList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id,
+                                           name
+                                    FROM player_questions
+                                    LIMIT 100"
+                };
                 using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
                     while (sqlReader.Read())
                     {
@@ -638,10 +708,44 @@ namespace foreversickWebAppPSQL.Controllers
                     CommandText = @"SELECT id,
                                            name
                                     FROM patient_answers
-                                    WHERE name ILIKE '%' || @substring || '%'"
+                                    WHERE name ILIKE '%' || @substring || '%'
+                                    LIMIT 100"
                 };
                 NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
                 Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        Answer answer = new Answer(sqlReader.GetInt32(0), sqlReader.GetString(1));
+                        answerList.Add(answer);
+                    }
+            }
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<AnswerList>(answerList, options);
+            return res;
+        }
+
+        [HttpGet("[action]")]
+        //GET: GameContext/AnswersBySubstring
+        // возвращает список первых 100 ответов
+        public string AnswersBySubstring()
+        {
+            AnswerList answerList = new AnswerList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id,
+                                           name
+                                    FROM patient_answers
+                                    LIMIT 100"
+                };
                 using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
                     while (sqlReader.Read())
                     {
@@ -766,7 +870,8 @@ namespace foreversickWebAppPSQL.Controllers
                                            accuracy
                                     FROM numerical_indicators_ranges
                                     JOIN patient_indicators ON numerical_indicators_ranges.indicator_id = patient_indicators.id
-                                    WHERE name ILIKE '%' || @substring || '%'"
+                                    WHERE name ILIKE '%' || @substring || '%'
+                                    LIMIT 100"
                 };
                 NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
                 Command.Parameters.Add(substring_param);
@@ -793,6 +898,55 @@ namespace foreversickWebAppPSQL.Controllers
             string res = JsonSerializer.Serialize<NumericalIndicatorList>(indicatorsList, options);
             return res;
         }
+
+        [HttpGet("[action]")]
+        //GET: GameContext/NumericalIndicatorsBySubstring
+        // возвращает список ВСЕХ числовых индикаторов, в названии которых есть подстрока substring
+        public string NumericalIndicatorsBySubstring()
+        {
+            NumericalIndicatorList indicatorsList = new NumericalIndicatorList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT indicator_id,
+                                           name,
+                                           min_value,
+                                           max_value,
+                                           normal_min,
+                                           normal_max,
+                                           units_name,
+                                           accuracy
+                                    FROM numerical_indicators_ranges
+                                    JOIN patient_indicators ON numerical_indicators_ranges.indicator_id = patient_indicators.id
+                                    LIMIT 100"
+                };
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        NumericalIndicator indicator = new NumericalIndicator(sqlReader.GetInt32(0),
+                                                                              sqlReader.GetString(1),
+                                                                              sqlReader.GetDouble(2),
+                                                                              sqlReader.GetDouble(3),
+                                                                              sqlReader.GetDouble(4),
+                                                                              sqlReader.GetDouble(5),
+                                                                              sqlReader.GetString(6),
+                                                                              sqlReader.GetInt32(7));
+                        indicatorsList.Add(indicator);
+                    }
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<NumericalIndicatorList>(indicatorsList, options);
+            return res;
+        }
+
         // выдаёт рандомное значение между минимальным и максимальным с заданной точностью
         public string GetRandomParam(double min, double max, int accuracy)
         {
