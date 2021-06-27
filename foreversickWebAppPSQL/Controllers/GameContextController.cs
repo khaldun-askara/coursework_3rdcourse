@@ -1212,7 +1212,7 @@ namespace foreversickWebAppPSQL.Controllers
 
         [HttpGet("[action]/{diagnosis_id}-{indicator_id}")]
         // GET: GameContext/DiagnosisQuestionValidation/diagnosis_id-indicator_id
-        // возвращает 1, если для диагноза указан этот диагноз(то есть есть пара диагноз-индикатор в таблице), иначе 0
+        // возвращает 1, если для диагноза указан этот индикатор(то есть есть пара диагноз-индикатор в таблице), иначе 0
         public int DiagnosisNumericalIndicatorValidation(int diagnosis_id, int indicator_id)
         {
             int count = 0;
@@ -1290,7 +1290,268 @@ namespace foreversickWebAppPSQL.Controllers
             }
             return string.Join(", ", answers);
         }
+
+        [HttpGet("[action]/{substring}")]
+        //GET: GameContext/EnumeratedIndicatorsBySubstring
+        // возвращает список ВСЕХ перечислимых индикаторов, в названии которых есть подстрока substring
+        public string EnumeratedIndicatorsBySubstring(string substring)
+        {
+            EnumeratedIndicatorList indicatorsList = new EnumeratedIndicatorList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id, name
+                                    FROM patient_indicators
+                                    WHERE type_is_enum = true AND name ILIKE '%' || @substring || '%'
+                                    LIMIT 100"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        EnumeratedIndicator indicator = new EnumeratedIndicator(sqlReader.GetInt32(0),
+                                                                              sqlReader.GetString(1));
+                        indicatorsList.Add(indicator);
+                    }
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<EnumeratedIndicatorList>(indicatorsList, options);
+            return res;
+        }
+
+        [HttpGet("[action]")]
+        //GET: GameContext/EnumeratedIndicatorsBySubstring
+        // возвращает список первых 100 перечислимых индикаторов
+        public string EnumeratedIndicatorsBySubstring()
+        {
+            EnumeratedIndicatorList indicatorsList = new EnumeratedIndicatorList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id, name
+                                    FROM patient_indicators
+                                    WHERE type_is_enum = true
+                                    LIMIT 100"
+                };
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        EnumeratedIndicator indicator = new EnumeratedIndicator(sqlReader.GetInt32(0),
+                                                                              sqlReader.GetString(1));
+                        indicatorsList.Add(indicator);
+                    }
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<EnumeratedIndicatorList>(indicatorsList, options);
+            return res;
+        }
+
+        [HttpGet("[action]/{diagnosis_id}")]
+        //GET:GameContext/EnumeratedIndicators/diagnosis_id
+        // возвращает список числовых индикаторов для конкретного диагноза
+        public string EnumeratedIndicators(int diagnosis_id)
+        {
+            EnumeratedIndicatorInDiagnosisList indicatorsList = new EnumeratedIndicatorInDiagnosisList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT diagnosis_id, indicator_id, patient_indicators.name, value_id, enumerated_indicators_values.name
+                                    FROM enumerated_indicators_of_diagnoses
+                                    JOIN patient_indicators ON enumerated_indicators_of_diagnoses.indicator_id = patient_indicators.id
+                                    JOIN enumerated_indicators_values ON enumerated_indicators_of_diagnoses.value_id = enumerated_indicators_values.id
+                                    WHERE diagnosis_id = @diagnosis_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                Command.Parameters.Add(diagnosisParam);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        EnumeratedIndicator indicator = new EnumeratedIndicator(sqlReader.GetInt32(1),
+                                                                              sqlReader.GetString(2));
+                        EnumeratedValue value = new EnumeratedValue(sqlReader.GetInt32(3),
+                                                                    sqlReader.GetString(4));
+                        EnumeratedIndicatorInDiagnosis indicatorInDiagnosis = new EnumeratedIndicatorInDiagnosis(sqlReader.GetInt32(0),
+                                                                                                               indicator,
+                                                                                                               value);
+                        indicatorsList.Add(indicatorInDiagnosis);
+                    }
+            }
+            string res = JsonSerializer.Serialize<EnumeratedIndicatorInDiagnosisList>(indicatorsList);
+            return res;
+        }
+
+
+        [HttpPost("[action]")]
+        // POST: GameContext/EnumeratedIndicators/
+        // добавляет индикатор к диагнозу, указывая значение этого индикатора при этом диагнозе
+        public int EnumeratedIndicators(enum_indicator_in_diagnosis request)
+        {
+            int res = -1;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO enumerated_indicators_values_in_types VALUES (@indicator_id, @value_id, false) ON CONFLICT DO NOTHING;
+                                    INSERT INTO enumerated_indicators_of_diagnoses VALUES (@diagnosis_id, @indicator_id, @value_id)"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", request.diagnosis_id);
+                NpgsqlParameter indicator_idParam = new NpgsqlParameter("@indicator_id", request.indicator_id);
+                NpgsqlParameter value_idParam = new NpgsqlParameter("@value_id", request.value_id);
+                Command.Parameters.Add(diagnosisParam);
+                Command.Parameters.Add(indicator_idParam);
+                Command.Parameters.Add(value_idParam);
+                res = Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+            return res;
+        }
+        [HttpGet("[action]/{diagnosis_id}-{indicator_id}-{value_id}")]
+        // GET: GameContext/DiagnosisEnumeratedIndicatorValidation/diagnosis_id-indicator_id
+        // возвращает 1, если для диагноза указан этот индикатор(то есть есть тройка диагноз-индикатор-значение в таблице), иначе 0
+        public int DiagnosisEnumeratedIndicatorValidation(int diagnosis_id, int indicator_id, int value_id)
+        {
+            int count = 0;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT COUNT (*) FROM enumerated_indicators_of_diagnoses
+                                    WHERE diagnosis_id = @diagnosis_id
+                                    AND indicator_id = @indicator_id
+                                    AND value_id = @value_id"
+                };
+                NpgsqlParameter diagnosisParam = new NpgsqlParameter("@diagnosis_id", diagnosis_id);
+                NpgsqlParameter indicator_idParam = new NpgsqlParameter("@indicator_id", indicator_id);
+                NpgsqlParameter value_idParam = new NpgsqlParameter("@value_id", value_id);
+                Command.Parameters.Add(diagnosisParam);
+                Command.Parameters.Add(indicator_idParam);
+                Command.Parameters.Add(value_idParam);
+
+                int.TryParse(Command.ExecuteScalar().ToString(), out count);
+                sConn.Close();
+            }
+            return count;
+        }
+
+
         #endregion ENUMERATED
+        #region ENUMERATED VALUE
+        [HttpGet("[action]/{substring}")]
+        //GET: GameContext/EnumeratedValuesBySubstring
+        // возвращает список ВСЕХ значений перечислимых индикаторов, в названии которых есть подстрока substring
+        public string EnumeratedValuesBySubstring(string substring)
+        {
+            EnumeratedValueList valuesList = new EnumeratedValueList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id, name
+                                    FROM enumerated_indicators_values
+                                    WHERE name ILIKE '%' || @substring || '%'
+                                    LIMIT 100"
+                };
+                NpgsqlParameter substring_param = new NpgsqlParameter("@substring", substring);
+                Command.Parameters.Add(substring_param);
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        EnumeratedValue value = new EnumeratedValue(sqlReader.GetInt32(0),
+                                                                        sqlReader.GetString(1));
+                        valuesList.Add(value);
+                    }
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<EnumeratedValueList>(valuesList, options);
+            return res;
+        }
+        [HttpGet("[action]")]
+        //GET: GameContext/EnumeratedValuesBySubstring
+        // возвращает список первых 100 значений перечислимых индикаторов
+        public string EnumeratedValuesBySubstring()
+        {
+            EnumeratedValueList valuesList = new EnumeratedValueList();
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"SELECT id, name
+                                    FROM enumerated_indicators_values
+                                    LIMIT 100"
+                };
+                using (NpgsqlDataReader sqlReader = Command.ExecuteReader())
+                    while (sqlReader.Read())
+                    {
+                        EnumeratedValue value = new EnumeratedValue(sqlReader.GetInt32(0),
+                                                                        sqlReader.GetString(1));
+                        valuesList.Add(value);
+                    }
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            };
+            string res = JsonSerializer.Serialize<EnumeratedValueList>(valuesList, options);
+            return res;
+        }
+        [HttpPost("[action]")]
+        // POST: GameContext/EnumeratedValue/
+        // добавляет значение перечислимого индикатора
+        public int EnumeratedValue(EnumeratedValue value)
+        {
+            int res = -1;
+            using (var sConn = new NpgsqlConnection(sConnStr))
+            {
+                sConn.Open();
+                NpgsqlCommand Command = new NpgsqlCommand
+                {
+                    Connection = sConn,
+                    CommandText = @"INSERT INTO enumerated_indicators_values (name) VALUES (@name)"
+                };
+                NpgsqlParameter nameParam = new NpgsqlParameter("@name", value.name);
+                Command.Parameters.Add(nameParam);
+                res = Command.ExecuteNonQuery();
+                sConn.Close();
+            }
+            return res;
+        }
+
+        #endregion ENUMERATED VALUE
         #endregion ANALYSES TABLES
 
         #region SUGGESTION TABLE

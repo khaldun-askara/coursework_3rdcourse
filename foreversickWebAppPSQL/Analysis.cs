@@ -78,7 +78,7 @@ namespace foreversickWebAppPSQL
         }
     }
 
-    class NumericalIndicatorInDiagnosis
+    public class NumericalIndicatorInDiagnosis
     {
         public int diagnosis_id { get; set; }
         public NumericalIndicator indicator { get; set; }
@@ -94,7 +94,7 @@ namespace foreversickWebAppPSQL
         }
     }
 
-    class NumericalIndicatorInDiagnosisList
+    public class NumericalIndicatorInDiagnosisList
     {
         public List<NumericalIndicatorInDiagnosis> numericalIndicators { get; set; }
         public NumericalIndicatorInDiagnosisList() { numericalIndicators = new List<NumericalIndicatorInDiagnosis>(); }
@@ -114,5 +114,100 @@ namespace foreversickWebAppPSQL
         public int indicator_id { get; set; }
         public double value_min { get; set; }
         public double value_max { get; set; }
+    }
+
+    [Serializable]
+    public class EnumeratedIndicator
+    {
+        public int indicator_id { get; set; }
+        public string name { get; set; }
+        public EnumeratedIndicator() { }
+
+        public EnumeratedIndicator(int indicator_id, string name)
+        {
+            this.indicator_id = indicator_id;
+            this.name = name;
+        }
+    }
+
+    [Serializable]
+    public class EnumeratedIndicatorList
+    {
+        public List<EnumeratedIndicator> enumeratedIndicators { get; set; }
+        public EnumeratedIndicatorList() { enumeratedIndicators = new List<EnumeratedIndicator>(); }
+        public EnumeratedIndicatorList(List<EnumeratedIndicator> enumeratedIndicators)
+        {
+            this.enumeratedIndicators = enumeratedIndicators;
+        }
+        public void Add(EnumeratedIndicator indicator)
+        {
+            enumeratedIndicators.Add(indicator);
+        }
+    }
+
+    [Serializable]
+    public class EnumeratedValue
+    {
+        public int value_id { get; set; }
+        public string name { get; set; }
+        public EnumeratedValue() { }
+
+        public EnumeratedValue(int value_id, string name)
+        {
+            this.value_id = value_id;
+            this.name = name;
+        }
+    }
+
+    [Serializable]
+    public class EnumeratedValueList
+    {
+        public List<EnumeratedValue> enumeratedValues { get; set; }
+        public EnumeratedValueList() { enumeratedValues = new List<EnumeratedValue>(); }
+        public EnumeratedValueList(List<EnumeratedValue> enumeratedValues)
+        {
+            this.enumeratedValues = enumeratedValues;
+        }
+        public void Add(EnumeratedValue indicator)
+        {
+            enumeratedValues.Add(indicator);
+        }
+    }
+
+    [Serializable]
+    public class EnumeratedIndicatorInDiagnosis
+    {
+        public int diagnosis_id { get; set; }
+        public EnumeratedIndicator indicator { get; set; }
+        public EnumeratedValue value { get; set; }
+        public EnumeratedIndicatorInDiagnosis() { }
+        public EnumeratedIndicatorInDiagnosis(int diagnosis_id, EnumeratedIndicator indicator, EnumeratedValue value)
+        {
+            this.diagnosis_id = diagnosis_id;
+            this.indicator = indicator;
+            this.value = value;
+        }
+    }
+
+    [Serializable]
+    public class EnumeratedIndicatorInDiagnosisList
+    {
+        public List<EnumeratedIndicatorInDiagnosis> enumeratedIndicators { get; set; }
+        public EnumeratedIndicatorInDiagnosisList() { enumeratedIndicators = new List<EnumeratedIndicatorInDiagnosis>(); }
+        public EnumeratedIndicatorInDiagnosisList(List<EnumeratedIndicatorInDiagnosis> enumeratedIndicators)
+        {
+            this.enumeratedIndicators = enumeratedIndicators;
+        }
+        public void Add(EnumeratedIndicatorInDiagnosis indicator)
+        {
+            enumeratedIndicators.Add(indicator);
+        }
+    }
+
+    public class enum_indicator_in_diagnosis
+    {
+        public int diagnosis_id { get; set; }
+        public int indicator_id { get; set; }
+        public int value_id { get; set; }
     }
 }
